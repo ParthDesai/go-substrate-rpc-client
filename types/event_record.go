@@ -214,11 +214,15 @@ type EventRecords struct {
 	Multisig_MultisigCancelled         []EventMultisigCancelled                 //nolint:stylecheck,golint
 }
 
+func (e EventRecordsRaw) DecodeEventRecords(m *Metadata, t interface{}) error {
+	return e.DecodeEventRecordsDynamically(m, t, nil)
+}
+
 // DecodeEventRecords decodes the events records from an EventRecordRaw into a target t using the given Metadata m
 // If this method returns an error like `unable to decode Phase for event #x: EOF`, it is likely that you have defined
 // a custom event record with a wrong type. For example your custom event record has a field with a length prefixed
 // type, such as types.Bytes, where your event in reallity contains a fixed width type, such as a types.U32.
-func (e EventRecordsRaw) DecodeEventRecords(m *Metadata, t interface{}) error {
+func (e EventRecordsRaw) DecodeEventRecordsDynamically(m *Metadata, t interface{}, dynamicEventsDecoder *DynamicEventDecoder) error {
 	log.Debug(fmt.Sprintf("will decode event records from raw hex: %#x", e))
 
 	// ensure t is a pointer
@@ -273,18 +277,28 @@ func (e EventRecordsRaw) DecodeEventRecords(m *Metadata, t interface{}) error {
 		log.Debug(fmt.Sprintf("event #%v has EventID %v", i, id))
 
 		// ask metadata for method & event name for event
-		moduleName, eventName, err := m.FindEventNamesForEventID(id)
+		moduleName, event, err := m.FindEventByEventId(id)
 		// moduleName, eventName, err := "System", "ExtrinsicSuccess", nil
 		if err != nil {
 			return fmt.Errorf("unable to find event with EventID %v in metadata for event #%v: %s", id, i, err)
 		}
 
-		log.Debug(fmt.Sprintf("event #%v is in module %v with event name %v", i, moduleName, eventName))
+		log.Debug(fmt.Sprintf("event #%v is in module %v with event name %v", i, moduleName, event.EventName()))
 
 		// check whether name for eventID exists in t
-		field := val.FieldByName(fmt.Sprintf("%v_%v", moduleName, eventName))
+		field := val.FieldByName(fmt.Sprintf("%v_%v", moduleName, event.EventName()))
 		if !field.IsValid() {
-			return fmt.Errorf("unable to find field %v_%v for event #%v with EventID %v", moduleName, eventName, i, id)
+			// If dynamic events encoder is non-null then we can to use it to try to decode event
+			if dynamicEventsDecoder != nil {
+				_, err = dynamicEventsDecoder.DecodeEvent(decoder, moduleName, event)
+				if err != nil {
+					return fmt.Errorf("unable to find static field %v_%v for event #%v, unable to parse event " +
+						"dynamically error: %v", moduleName, event.EventName(), i, err)
+				}
+				continue
+			} else {
+				return fmt.Errorf("unable to find field %v_%v for event #%v with EventID %v", moduleName, event.EventName(), i, id)
+			}
 		}
 
 		// create a pointer to with the correct type that will hold the decoded event
@@ -294,17 +308,17 @@ func (e EventRecordsRaw) DecodeEventRecords(m *Metadata, t interface{}) error {
 		numFields := holder.Elem().NumField()
 		if numFields < 2 {
 			return fmt.Errorf("expected event #%v with EventID %v, field %v_%v to have at least 2 fields "+
-				"(for Phase and Topics), but has %v fields", i, id, moduleName, eventName, numFields)
+				"(for Phase and Topics), but has %v fields", i, id, moduleName, event.EventName(), numFields)
 		}
 		phaseField := holder.Elem().FieldByIndex([]int{0})
 		if phaseField.Type() != reflect.TypeOf(phase) {
 			return fmt.Errorf("expected the first field of event #%v with EventID %v, field %v_%v to be of type "+
-				"types.Phase, but got %v", i, id, moduleName, eventName, phaseField.Type())
+				"types.Phase, but got %v", i, id, moduleName, event.EventName(), phaseField.Type())
 		}
 		topicsField := holder.Elem().FieldByIndex([]int{numFields - 1})
 		if topicsField.Type() != reflect.TypeOf([]Hash{}) {
 			return fmt.Errorf("expected the last field of event #%v with EventID %v, field %v_%v to be of type "+
-				"[]types.Hash for Topics, but got %v", i, id, moduleName, eventName, topicsField.Type())
+				"[]types.Hash for Topics, but got %v", i, id, moduleName, event.EventName(), topicsField.Type())
 		}
 
 		// set the phase we decoded earlier
@@ -315,7 +329,7 @@ func (e EventRecordsRaw) DecodeEventRecords(m *Metadata, t interface{}) error {
 			err = decoder.Decode(holder.Elem().FieldByIndex([]int{j}).Addr().Interface())
 			if err != nil {
 				return fmt.Errorf("unable to decode field %v event #%v with EventID %v, field %v_%v: %v", j, i, id, moduleName,
-					eventName, err)
+					event.EventName(), err)
 			}
 		}
 

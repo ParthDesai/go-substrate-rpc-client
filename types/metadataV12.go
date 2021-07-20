@@ -48,6 +48,24 @@ func (m *MetadataV12) FindCallIndex(call string) (CallIndex, error) {
 	return CallIndex{}, fmt.Errorf("module %v not found in metadata for call %v", s[0], call)
 }
 
+func (m *MetadataV12) FindEventByEventId(eventID EventID) (Text, *EventMetadataV4, error) {
+	mi := uint8(0)
+	for _, mod := range m.Modules {
+		if !mod.HasEvents {
+			continue
+		}
+		if mi != eventID[0] {
+			mi++
+			continue
+		}
+		if int(eventID[1]) >= len(mod.Events) {
+			return "", nil, fmt.Errorf("event index %v for module %v out of range", eventID[1], mod.Name)
+		}
+		return mod.Name, &mod.Events[eventID[1]], nil
+	}
+	return "", nil, fmt.Errorf("module index %v out of range", eventID[0])
+}
+
 func (m *MetadataV12) FindEventNamesForEventID(eventID EventID) (Text, Text, error) {
 	for _, mod := range m.Modules {
 		if !mod.HasEvents {

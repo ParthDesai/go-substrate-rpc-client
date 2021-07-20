@@ -69,6 +69,24 @@ func (m *MetadataV4) FindCallIndex(call string) (CallIndex, error) {
 	return CallIndex{}, fmt.Errorf("module %v not found in metadata for call %v", s[0], call)
 }
 
+func (m *MetadataV4) FindEventByEventId(eventID EventID) (Text, *EventMetadataV4, error) {
+	mi := uint8(0)
+	for _, mod := range m.Modules {
+		if !mod.HasEvents {
+			continue
+		}
+		if mi != eventID[0] {
+			mi++
+			continue
+		}
+		if int(eventID[1]) >= len(mod.Events) {
+			return "", nil, fmt.Errorf("event index %v for module %v out of range", eventID[1], mod.Name)
+		}
+		return mod.Name, &mod.Events[eventID[1]], nil
+	}
+	return "", nil, fmt.Errorf("module index %v out of range", eventID[0])
+}
+
 func (m *MetadataV4) FindEventNamesForEventID(eventID EventID) (Text, Text, error) {
 	mi := uint8(0)
 	for _, mod := range m.Modules {
@@ -117,6 +135,12 @@ func (m *MetadataV4) ExistsModuleMetadata(module string) bool {
 		}
 	}
 	return false
+}
+
+type EventMetadata interface {
+	EventName() Text
+	EventArguments() []Type
+	EventDocumentation() []Text
 }
 
 type StorageEntryMetadata interface {
@@ -432,6 +456,18 @@ type EventMetadataV4 struct {
 	Name          Text
 	Args          []Type
 	Documentation []Text
+}
+
+func (e *EventMetadataV4) EventName() Text {
+	return e.Name
+}
+
+func (e *EventMetadataV4) EventArguments() []Type {
+	return e.Args
+}
+
+func (e *EventMetadataV4) EventDocumentation() []Text {
+	return e.Documentation
 }
 
 func (s StorageHasher) HashFunc() (hash.Hash, error) {

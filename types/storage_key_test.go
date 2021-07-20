@@ -18,6 +18,7 @@ package types_test
 
 import (
 	"encoding/binary"
+	"fmt"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/hash"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/xxhash"
 	"strings"
@@ -109,6 +110,19 @@ func TestCreateStorageKeyArgValidationForMapKey(t *testing.T) {
 
 func TestCreateStorageKeyArgValidationForDoubleMapKey(t *testing.T) {
 	m := ExamplaryMetadataV13
+
+	storage := make(map[string]bool)
+	for _, module := range m.AsMetadataV13.Modules {
+		for _, event := range module.Events {
+			for _, arg := range event.Args {
+				storage[string(arg)] = true
+			}
+		}
+	}
+
+	for k, _ := range storage {
+		fmt.Printf("%s\n", k)
+	}
 
 	_, err := CreateStorageKey(m, "Staking", "ErasStakers")
 	assert.EqualError(t, err, "Staking:ErasStakers is a double map, therefore requires precisely two " +

@@ -220,27 +220,35 @@ func (m *Metadata) FindCallIndex(call string) (CallIndex, error) {
 	}
 }
 
-func (m *Metadata) FindEventNamesForEventID(eventID EventID) (Text, Text, error) {
+func (m *Metadata) FindEventByEventId(eventID EventID) (Text, EventMetadata, error) {
 	switch {
 	case m.IsMetadataV4:
-		return m.AsMetadataV4.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV4.FindEventByEventId(eventID)
 	case m.IsMetadataV7:
-		return m.AsMetadataV7.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV7.FindEventByEventId(eventID)
 	case m.IsMetadataV8:
-		return m.AsMetadataV8.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV8.FindEventByEventId(eventID)
 	case m.IsMetadataV9:
-		return m.AsMetadataV9.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV9.FindEventByEventId(eventID)
 	case m.IsMetadataV10:
-		return m.AsMetadataV10.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV10.FindEventByEventId(eventID)
 	case m.IsMetadataV11:
-		return m.AsMetadataV11.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV11.FindEventByEventId(eventID)
 	case m.IsMetadataV12:
-		return m.AsMetadataV12.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV12.FindEventByEventId(eventID)
 	case m.IsMetadataV13:
-		return m.AsMetadataV13.FindEventNamesForEventID(eventID)
+		return m.AsMetadataV13.FindEventByEventId(eventID)
 	default:
-		return "", "", fmt.Errorf("unsupported metadata version")
+		return "", nil, fmt.Errorf("unsupported metadata version")
 	}
+}
+
+func (m *Metadata) FindEventNamesForEventID(eventID EventID) (Text, Text, error) {
+	moduleName, event, err := m.FindEventByEventId(eventID);
+	if err != nil {
+		return "", "", err
+	}
+	return moduleName, event.EventName(), nil
 }
 
 func (m *Metadata) FindStorageEntryMetadata(module string, fn string) (StorageEntryMetadata, error) {
