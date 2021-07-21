@@ -3,7 +3,6 @@ package types
 import (
 	"bytes"
 	"crypto/rand"
-	"fmt"
 	"github.com/centrifuge/go-substrate-rpc-client/v3/scale"
 	"github.com/stretchr/testify/assert"
 	"reflect"
@@ -170,7 +169,6 @@ func TestDynamicEventDecoding(t *testing.T) {
 	err = encoder.Encode(testEvent2)
 	assert.NoError(t, err)
 	testEventEncodedData = buffer.Bytes()
-	fmt.Println(testEventEncodedData)
 
 	decoder = scale.NewDecoder(bytes.NewReader(testEventEncodedData))
 

@@ -220,7 +220,7 @@ func (d *DynamicEventDecoder) DecodeEvent(decoder *scale.Decoder, moduleName Tex
 }
 
 func (d *DynamicEventDecoder) createEventType(moduleName string, eventName string, eventArguments []string) (reflect.Type, error) {
-	eventType, ok := d.eventTypeCache[moduleName + "_" + string(eventName)]
+	eventType, ok := d.eventTypeCache[moduleName + "_" + eventName]
 	if ok {
 		return eventType, nil
 	} else {
@@ -246,7 +246,7 @@ func (d *DynamicEventDecoder) createEventType(moduleName string, eventName strin
 		}
 
 		eventType := reflect.StructOf(stFields)
-		d.eventTypeCache[moduleName + "_" + string(eventName)] = eventType
+		d.eventTypeCache[moduleName + "_" + eventName] = eventType
 		return eventType, nil
 	}
 }
