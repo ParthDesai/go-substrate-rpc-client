@@ -176,7 +176,7 @@ func TestDynamicEventDecoding(t *testing.T) {
 
 	eventMetadata = EventMetadataV4{
 		Name: "Dispatched",
-		Args: []Type{"TaskAddress<BlockNumber>", "Option<Vec<u8>>", "DispatchResult"},
+		Args: []Type{"TaskAddress<BlockNumber>", "Option<Bytes>", "DispatchResult"},
 	}
 	dynamicEvent, err = dynamicEventDecoder.DecodeEvent(decoder, "Scheduler",  &eventMetadata)
 	assert.NoError(t, err)

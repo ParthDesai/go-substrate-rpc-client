@@ -41,7 +41,7 @@ func (a *SliceEventField) RustType() string {
 
 func (a *SliceEventField) GetInstance() interface{} {
 	myType := a.GetType()
-	return reflect.New(myType).Interface()
+	return reflect.Zero(myType).Interface()
 }
 
 func (a *SliceEventField) GetType() reflect.Type {
@@ -68,7 +68,7 @@ func (t *TupleEventField) GetType() reflect.Type {
 
 func (t *TupleEventField) GetInstance() interface{} {
 	myType := t.GetType()
-	return reflect.New(myType).Interface()
+	return reflect.Zero(myType).Interface()
 }
 
 func (t *TupleEventField) RustType() string {
@@ -103,7 +103,7 @@ func (o *OptionEventField) GetType() reflect.Type {
 
 func (o *OptionEventField) GetInstance() interface{} {
 	myType := o.GetType()
-	return reflect.New(myType).Interface()
+	return reflect.Zero(myType).Interface()
 }
 
 func (o *OptionEventField) RustType() string {
@@ -135,7 +135,11 @@ func (d *DynamicEventDecoder) getRawField(argStr string) (interface{}, error) {
 	}
 	switch instance.(type){
 	case EventFieldRedirection:
-		return d.getRawField(string(instance.(EventFieldRedirection)))
+		eventField, err := d.parseEventField(string(instance.(EventFieldRedirection)))
+		if err != nil {
+			return nil, err
+		}
+		return eventField.GetInstance(), nil
 	default:
 		return instance, nil
 	}

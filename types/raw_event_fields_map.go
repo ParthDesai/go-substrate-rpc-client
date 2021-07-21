@@ -16,7 +16,7 @@ var RawEventFields = map[string]interface{}{
 	"ucompact": UCompact{},
 	"exposure": Exposure{},
 	"bytes16": Bytes16{},
-	"bytes": Bytes{},
+	"bytes": EventFieldRedirection("vec<u8>"),
 	"u32": U32(1),
 	"electioncompute": ElectionCompute(1),
 	"dispatchinfo": DispatchInfo{},
@@ -26,6 +26,7 @@ var RawEventFields = map[string]interface{}{
 	"votethreshold": VoteThreshold(1),
 	"bool": Bool(true),
 	"taskaddress<blocknumber>": TaskAddress{},
-	"vec<u8>": EventFieldRedirection("bytes"),
 	"u8": byte(1),
+	"assetid": EventFieldRedirection("u32"),
+	"opaquetimeslot": EventFieldRedirection("vec<u8>"),
 }
